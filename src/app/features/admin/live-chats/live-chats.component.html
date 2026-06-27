@@ -1,0 +1,187 @@
+<div class="flex h-[calc(100vh-100px)] gap-0 lg:gap-4 overflow-hidden select-none">
+  <!-- Queue sidebar -->
+  <div class="w-full lg:w-96 rounded-2xl border border-border bg-card flex flex-col h-full overflow-hidden shrink-0 shadow-card"
+    [class.hidden]="showChat()" [class.lg:flex]="true" [class.flex]="!showChat()">
+
+    <!-- Header -->
+    <div class="px-6 py-5 border-b border-border/60 bg-gradient-to-r from-blue-50/50 to-muted/30 shrink-0">
+      <div class="flex items-center justify-between gap-3">
+        <div class="flex items-center gap-2.5">
+          <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600/10">
+            <svg class="h-4 w-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          </div>
+          <div>
+            <p class="text-[12px] font-bold text-foreground">Active Queue</p>
+            <p class="text-[10px] text-muted-foreground">Real-time conversations</p>
+          </div>
+        </div>
+        <span class="rounded-full bg-blue-600 text-white px-2.5 py-1 text-[11px] font-bold min-w-[32px] text-center">{{ activeTickets.length }}</span>
+      </div>
+    </div>
+
+    <!-- Queue list -->
+    <div class="flex-1 overflow-y-auto scrollbar-thin">
+      @if (loading()) {
+        <div class="space-y-2 p-4">
+          @for (i of [1,2,3,4]; track i) {
+            <div class="p-4 rounded-xl bg-muted/30 animate-pulse space-y-2">
+              <div class="h-4 bg-muted rounded w-1/2"></div>
+              <div class="h-3 bg-muted rounded w-3/4"></div>
+            </div>
+          }
+        </div>
+      } @else if (activeTickets.length === 0) {
+        <div class="flex flex-col items-center justify-center h-full p-8 text-center gap-4">
+          <div class="h-14 w-14 rounded-2xl bg-emerald-100 flex items-center justify-center">
+            <svg class="h-7 w-7 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          </div>
+          <div>
+            <p class="font-bold text-foreground text-sm">Queue is Clear</p>
+            <p class="text-[11px] text-muted-foreground mt-1">All customer inquiries handled ✓</p>
+          </div>
+        </div>
+      } @else {
+        <div class="space-y-2 p-4">
+          @for (ticket of activeTickets; track ticket._id) {
+            <div (click)="selectTicket(ticket)"
+              class="p-4 rounded-xl border border-border/60 cursor-pointer transition-all duration-150 hover:shadow-card-hover"
+              [class]="selectedTicket()?._id === ticket._id
+                ? 'bg-gradient-to-r from-blue-600/15 to-blue-500/5 border-blue-300/40 shadow-glow'
+                : 'bg-muted/30 hover:bg-muted/50'">
+              <div class="flex justify-between items-start gap-2 mb-2">
+                <span class="text-[12px] font-bold text-foreground truncate flex-1">{{ ticket.name }}</span>
+                <span class="text-[9px] text-muted-foreground shrink-0 font-mono bg-muted/40 px-2 py-0.5 rounded">{{ formatTime(ticket.createdAt) }}</span>
+              </div>
+              <p class="text-[11px] text-muted-foreground truncate mb-3 line-clamp-2">{{ ticket.issue }}</p>
+              <div class="flex items-center justify-between pt-2 border-t border-border/40">
+                <span class="text-[10px] font-semibold" [class]="getAgentName(ticket._id) === 'Unassigned' ? 'text-amber-600 bg-amber-100/50 px-2 py-1 rounded-lg' : 'text-muted-foreground'">
+                  {{ getAgentName(ticket._id) }}
+                </span>
+                <span class="text-[9px] text-muted-foreground/60 font-bold">#{{ ticket._id.slice(-4).toUpperCase() }}</span>
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- Chat pane -->
+  <div class="flex-1 rounded-2xl border border-border bg-card flex flex-col h-full overflow-hidden shadow-card"
+    [class.hidden]="!showChat()" [class.lg:flex]="true" [class.flex]="showChat()">
+    @if (selectedTicket()) {
+      <!-- Premium header -->
+      <div class="px-6 py-5 border-b border-border/60 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between bg-gradient-to-r from-muted/40 via-muted/20 to-transparent shrink-0">
+        <div class="flex items-center gap-4">
+          <button (click)="showChat.set(false)" class="rounded-lg p-1.5 hover:bg-muted lg:hidden text-muted-foreground">
+            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
+          <div class="flex items-center gap-3">
+            <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-100 text-sm font-bold text-blue-700">
+              {{ selectedTicket()!.name[0].toUpperCase() }}
+            </div>
+            <div>
+              <div class="flex items-center gap-2 flex-wrap">
+                <h3 class="text-[13px] font-bold text-foreground">{{ selectedTicket()!.name }}</h3>
+                <span class="text-[10px] text-muted-foreground">({{ selectedTicket()!.email }})</span>
+                <span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold"
+                  [class]="selectedTicket()!.status === 'pending'
+                    ? 'bg-amber-100/70 text-amber-700 border border-amber-200/50'
+                    : 'bg-emerald-100/70 text-emerald-700 border border-emerald-200/50'">
+                  <span class="h-2 w-2 rounded-full" [class]="selectedTicket()!.status === 'pending' ? 'bg-amber-500 animate-pulse' : 'bg-emerald-500'"></span>
+                  {{ selectedTicket()!.status === 'pending' ? 'Live' : 'Resolved' }}
+                </span>
+              </div>
+              <div class="flex items-center gap-3 text-[11px] text-muted-foreground mt-1.5 font-medium">
+                <span>📅 {{ formatTime(selectedTicket()!.createdAt) }}</span>
+                <span class="text-muted-foreground/50">·</span>
+                <span>👤 <b class="text-foreground">{{ getAgentName(selectedTicket()!._id) }}</b></span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        @if (selectedTicket()!.status === 'pending') {
+          <div class="flex items-center gap-2.5 flex-wrap">
+            @if (transferringId() === selectedTicket()!._id) {
+              <div class="flex items-center gap-2 bg-muted p-2 rounded-xl border border-border w-full sm:w-auto">
+                <select [(ngModel)]="selectedAgentForTransfer" class="bg-transparent text-[12px] font-bold focus:outline-none text-foreground cursor-pointer flex-1">
+                  <option value="">Select Agent...</option>
+                  @for (a of agents(); track a.id) {
+                    <option [value]="a.id" [disabled]="assignments()[selectedTicket()!._id] === a.id">{{ a.name }}</option>
+                  }
+                </select>
+                <button (click)="handleTransfer()" [disabled]="!selectedAgentForTransfer" class="bg-blue-600 text-white text-[10px] font-bold px-3 py-1.5 rounded-lg disabled:opacity-40">Assign</button>
+                <button (click)="transferringId.set(null)" class="text-[11px] font-bold text-muted-foreground hover:text-foreground">✕</button>
+              </div>
+            } @else {
+              <button (click)="transferringId.set(selectedTicket()!._id)" class="inline-flex items-center gap-1.5 text-[11px] font-bold px-3 py-2 border border-border/60 hover:bg-muted/50 text-foreground rounded-lg transition-colors">
+                <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+                Transfer
+              </button>
+            }
+            <button (click)="handleEndChat(selectedTicket()!._id)" class="inline-flex items-center gap-1.5 text-[11px] font-bold px-3 py-2 bg-rose-500/15 hover:bg-rose-500 text-rose-700 hover:text-white rounded-lg transition-all border border-rose-200/50">
+              <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+              End
+            </button>
+          </div>
+        }
+      </div>
+
+      <!-- Messages area -->
+      <div class="flex-1 overflow-y-auto p-6 space-y-5 scrollbar-thin"
+        style="background-color:#eef1f6;background-image:radial-gradient(at 15% 18%,rgba(99,102,241,0.18),transparent 50%),radial-gradient(at 85% 12%,rgba(56,189,248,0.18),transparent 50%),radial-gradient(at 80% 88%,rgba(16,185,129,0.16),transparent 50%),radial-gradient(at 15% 92%,rgba(236,72,153,0.14),transparent 50%)">
+        <div class="flex flex-col items-center py-4 text-center text-[11px] text-muted-foreground bg-muted/20 border border-border/40 rounded-xl max-w-md mx-auto px-4">
+          <span class="font-bold text-foreground text-[12px] tracking-wider">CUSTOMER ISSUE</span>
+          <span class="mt-2 font-semibold text-foreground">{{ selectedTicket()!.issue }}</span>
+        </div>
+
+        @for (msg of messages(); track $index) {
+          <div class="flex animate-slide-up" [class]="msg.sender === 'support' ? 'justify-end' : 'justify-start'">
+            <div class="max-w-[65%] flex flex-col gap-1.5" [class]="msg.sender === 'support' ? 'items-end' : 'items-start'">
+              <div class="rounded-2xl text-[13px] font-medium leading-relaxed overflow-hidden shadow-card-hover backdrop-blur-sm"
+                [class]="msg.sender === 'support'
+                  ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-tr-none px-5 py-3'
+                  : 'bg-card text-foreground border border-border/80 rounded-tl-none px-5 py-3'">
+                @if (msg.imageUrl) {
+                  <img [src]="msg.imageUrl" alt="Shared image" class="max-w-[280px] max-h-64 rounded-xl object-cover cursor-zoom-in block mb-2" (click)="fullscreenImage.set(msg.imageUrl!)"/>
+                }
+                @if (msg.text) { <span class="block">{{ msg.text }}</span> }
+              </div>
+              <span class="text-[9px] text-muted-foreground/70 px-2 font-semibold">
+                {{ msg.sender === 'support' ? 'Agent' : selectedTicket()!.name }} · {{ formatTime(msg.createdAt) }}
+              </span>
+            </div>
+          </div>
+        }
+        <div #messagesEnd></div>
+      </div>
+
+      <!-- Footer: read-only mode -->
+      <div class="px-6 py-4 border-t border-border/60 bg-gradient-to-r from-blue-50/50 to-muted/30 flex items-center justify-center gap-2.5 shrink-0">
+        <svg class="h-4 w-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        <span class="text-[11px] font-bold text-muted-foreground">🔒 Watch-only mode — Assigned agents handle replies</span>
+      </div>
+    } @else {
+      <div class="flex flex-col items-center justify-center h-full text-center p-8 gap-4">
+        <div class="h-16 w-16 bg-blue-100/50 rounded-2xl flex items-center justify-center">
+          <svg class="h-8 w-8 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        </div>
+        <div>
+          <h3 class="font-bold text-foreground text-base">Select a Conversation</h3>
+          <p class="text-[12px] text-muted-foreground mt-2 max-w-xs leading-relaxed">Choose an active support ticket from the queue to monitor and manage customer interactions</p>
+        </div>
+      </div>
+    }
+  </div>
+</div>
+
+<!-- Fullscreen image modal -->
+@if (fullscreenImage()) {
+  <div class="fixed inset-0 z-[9999] bg-black/95 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in" (click)="fullscreenImage.set(null)">
+    <button class="absolute top-4 right-4 text-white bg-white/15 hover:bg-white/25 rounded-full p-3 transition-all backdrop-blur-sm hover:scale-110" (click)="fullscreenImage.set(null)">
+      <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <img [src]="fullscreenImage()!" alt="Full size" class="max-w-[90vw] max-h-[90vh] rounded-2xl object-contain shadow-modal" (click)="$event.stopPropagation()"/>
+  </div>
+}

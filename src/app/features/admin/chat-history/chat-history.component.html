@@ -1,0 +1,123 @@
+<div class="space-y-6">
+  <div class="flex items-center gap-3.5">
+    <div class="flex h-11 w-11 items-center justify-center rounded-2xl text-white shadow-lg shadow-indigo-500/25" style="background:linear-gradient(135deg,#6366f1,#8b5cf6)">
+      <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2"/></svg>
+    </div>
+    <div>
+      <h1 class="text-[20px] font-bold text-slate-900">Conversation Archives</h1>
+      <p class="text-[12px] text-slate-400 mt-0.5">Search and review all past support conversations.</p>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 bg-white p-4 rounded-3xl border border-slate-200/70 shadow-sm">
+    <input type="text" [(ngModel)]="filterEmail" (ngModelChange)="onFilterChange()" placeholder="Search by email..." class="px-3 py-2.5 bg-muted/30 border border-border rounded-xl text-sm focus:outline-none focus:border-indigo-500 text-foreground placeholder-muted-foreground"/>
+    <input type="text" [(ngModel)]="filterAgent" (ngModelChange)="onFilterChange()" placeholder="Search by agent..." class="px-3 py-2.5 bg-muted/30 border border-border rounded-xl text-sm focus:outline-none focus:border-indigo-500 text-foreground placeholder-muted-foreground"/>
+    <select [(ngModel)]="filterStatus" (ngModelChange)="onFilterChange()" class="px-3 py-2.5 bg-muted/30 border border-border rounded-xl text-sm focus:outline-none text-foreground cursor-pointer">
+      <option value="all">All Statuses</option>
+      <option value="pending">Open</option>
+      <option value="solved">Resolved</option>
+    </select>
+    <input type="date" [(ngModel)]="filterDate" (ngModelChange)="onFilterChange()" class="px-3 py-2.5 bg-muted/30 border border-border rounded-xl text-sm focus:outline-none focus:border-indigo-500 text-foreground"/>
+  </div>
+
+  <div class="rounded-3xl border border-slate-200/70 bg-white shadow-sm overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full text-left text-sm">
+        <thead class="bg-slate-50/70 border-b border-slate-100">
+          <tr>
+            @for (h of ['Customer','Issue','Agent','Date','Status','Action']; track h) {
+              <th class="px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap">{{ h }}</th>
+            }
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-border/60">
+          @if (loading()) {
+            @for (i of [1,2,3,4,5]; track i) {
+              <tr><td colspan="6" class="px-4 py-4"><div class="h-4 bg-muted rounded animate-pulse w-full"></div></td></tr>
+            }
+          } @else {
+            @for (t of paginatedTickets; track t._id) {
+              <tr class="hover:bg-blue-50/40 transition-colors">
+                <td class="px-4 py-3">
+                  <div class="flex items-center gap-3">
+                    <div class="flex h-9 w-9 items-center justify-center rounded-full text-white font-bold text-[12px] shrink-0" style="background:linear-gradient(135deg,#3b82f6,#6366f1)">{{ t.name[0].toUpperCase() }}</div>
+                    <div class="min-w-0">
+                      <span class="block text-[12px] font-semibold text-slate-800">{{ t.name }}</span>
+                      <span class="block text-[11px] text-slate-400 truncate max-w-[130px]">{{ t.email }}</span>
+                    </div>
+                  </div>
+                </td>
+                <td class="px-4 py-3 text-[12px] text-slate-500 max-w-[200px] truncate">{{ t.issue }}</td>
+                <td class="px-4 py-3 text-[12px] text-slate-500">{{ getAgentName(t._id) }}</td>
+                <td class="px-4 py-3 text-[11px] text-muted-foreground whitespace-nowrap">{{ formatDate(t.createdAt) }}</td>
+                <td class="px-4 py-3">
+                  <span class="inline-flex items-center gap-1 rounded px-2 py-0.5 text-[11px] font-semibold"
+                    [class]="t.status === 'pending' ? 'bg-amber-500/10 text-amber-600' : 'bg-emerald-500/10 text-emerald-600'">
+                    <span class="h-1.5 w-1.5 rounded-full" [class]="t.status === 'pending' ? 'bg-amber-500' : 'bg-emerald-500'"></span>
+                    {{ t.status === 'pending' ? 'Open' : 'Resolved' }}
+                  </span>
+                </td>
+                <td class="px-4 py-3">
+                  <button (click)="openTranscript(t)" class="text-[12px] font-semibold text-indigo-500 hover:text-indigo-400 transition-colors">View →</button>
+                </td>
+              </tr>
+            }
+            @if (paginatedTickets.length === 0) {
+              <tr><td colspan="6" class="px-4 py-12 text-center text-[12px] text-muted-foreground">No conversations found matching your filters.</td></tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+
+    @if (totalPages > 1) {
+      <div class="flex items-center justify-between px-4 py-3 border-t border-border bg-muted/10">
+        <span class="text-[12px] text-muted-foreground">{{ filteredTickets.length }} conversations</span>
+        <div class="flex gap-1">
+          @for (p of pageNumbers(); track p) {
+            <button (click)="currentPage.set(p)" class="h-7 w-7 rounded text-[12px] font-medium transition-colors"
+              [class]="currentPage() === p ? 'bg-indigo-600 text-white' : 'text-muted-foreground hover:bg-muted'">{{ p }}</button>
+          }
+        </div>
+      </div>
+    }
+  </div>
+</div>
+
+<!-- Transcript modal -->
+<app-modal [isOpen]="modalOpen()" [title]="'Transcript: ' + (selectedTicket()?.name || '')" size="lg" (onClose)="modalOpen.set(false)">
+  @if (selectedTicket()) {
+    <div class="space-y-4">
+      <div class="flex flex-wrap gap-3 text-[12px] p-3 bg-muted/30 rounded-xl border border-border">
+        <span><b>Email:</b> {{ selectedTicket()!.email }}</span>
+        <span><b>Agent:</b> {{ getAgentName(selectedTicket()!._id) }}</span>
+        <span><b>Date:</b> {{ formatDate(selectedTicket()!.createdAt) }}</span>
+        <span class="inline-flex items-center gap-1 rounded px-2 py-0.5 font-semibold"
+          [class]="selectedTicket()!.status === 'pending' ? 'bg-amber-500/10 text-amber-600' : 'bg-emerald-500/10 text-emerald-600'">
+          {{ selectedTicket()!.status === 'pending' ? 'Open' : 'Resolved' }}
+        </span>
+      </div>
+      <div class="text-center text-xs text-muted-foreground border-b border-border/40 pb-2">
+        <span class="font-bold text-foreground">Initial Issue:</span> {{ selectedTicket()!.issue }}
+      </div>
+      <div class="space-y-3 max-h-[400px] overflow-y-auto pr-2 scrollbar-thin">
+        @for (msg of messages(); track $index) {
+          <div class="flex flex-col max-w-[75%]" [class]="msg.sender === 'support' ? 'ml-auto items-end' : 'mr-auto items-start'">
+            <div class="px-3.5 py-2 rounded-xl text-[12px] font-medium leading-relaxed"
+              [class]="msg.sender === 'support' ? 'bg-indigo-600 text-white rounded-tr-none' : 'bg-muted text-foreground border border-border rounded-tl-none'">
+              {{ msg.text }}
+              @if (msg.imageUrl) { <img [src]="msg.imageUrl" alt="image" class="max-w-[180px] rounded-lg mt-1"/> }
+            </div>
+            <span class="text-[9px] text-muted-foreground mt-1 px-1">
+              {{ msg.sender === 'support' ? 'Support' : selectedTicket()!.name }} · {{ formatTime(msg.createdAt) }}
+            </span>
+          </div>
+        }
+        @if (messages().length === 0) {
+          <p class="text-center text-[12px] text-muted-foreground py-8">No messages in this conversation.</p>
+        }
+      </div>
+    </div>
+  }
+</app-modal>

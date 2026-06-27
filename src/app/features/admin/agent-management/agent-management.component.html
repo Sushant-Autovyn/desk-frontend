@@ -1,0 +1,193 @@
+<div class="space-y-7">
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div>
+      <h1 class="text-[32px] font-black text-foreground tracking-tight">Support Team</h1>
+      <p class="text-[13px] text-muted-foreground mt-2 font-medium">Manage agents, roles, and department assignments</p>
+    </div>
+    <button (click)="openAdd()" class="inline-flex items-center gap-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-700 text-white px-6 py-3.5 text-[14px] font-bold hover:shadow-lg hover:-translate-y-0.5 transition-all shrink-0">
+      <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14m7-7H5"/></svg>
+      Register New Agent
+    </button>
+  </div>
+
+  <!-- Success message -->
+  @if (successMessage()) {
+    <div class="p-4 rounded-xl bg-emerald-50/80 border border-emerald-200/60 text-emerald-700 text-[13px] font-medium animate-slide-up flex items-center gap-3">
+      <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      {{ successMessage() }}
+    </div>
+  }
+
+  <!-- Filters bar -->
+  <div class="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 bg-card p-5 rounded-2xl border border-border/60 shadow-card">
+    <div class="relative lg:col-span-2">
+      <svg class="absolute inset-y-0 left-4 my-auto h-4 w-4 text-muted-foreground pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" [value]="searchQuery()" (input)="onSearchChange($any($event.target).value)" placeholder="Search by name or email..." class="w-full pl-11 pr-4 py-3 bg-muted/40 border border-border/60 rounded-lg text-[13px] font-medium focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-200/50 placeholder-muted-foreground"/>
+    </div>
+    <select [value]="statusFilter()" (change)="onStatusChange($any($event.target).value)" class="px-4 py-3 bg-muted/40 border border-border/60 rounded-lg text-[13px] font-medium focus:outline-none text-foreground cursor-pointer hover:border-border/80">
+      <option value="all">All Statuses</option>
+      <option value="active">🟢 Active</option>
+      <option value="inactive">⚪ Inactive</option>
+    </select>
+    <select [value]="deptFilter()" (change)="onDeptChange($any($event.target).value)" class="px-4 py-3 bg-muted/40 border border-border/60 rounded-lg text-[13px] font-medium focus:outline-none text-foreground cursor-pointer hover:border-border/80">
+      <option value="all">All Departments</option>
+      @for (d of departments(); track d.id) { <option [value]="d.name">{{ d.name }}</option> }
+    </select>
+  </div>
+
+  <!-- Premium table -->
+  <div class="rounded-2xl border border-border/60 bg-card overflow-hidden shadow-card">
+    <div class="overflow-x-auto">
+      <table class="w-full text-left text-sm">
+        <thead>
+          <tr class="bg-gradient-to-r from-muted/40 to-muted/20 border-b border-border/60">
+            @for (h of ['Name','Email','Department','Role','Status','Chats','Actions']; track h) {
+              <th class="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-muted-foreground whitespace-nowrap">{{ h }}</th>
+            }
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-border/40">
+          @for (agent of paginatedAgents; track agent.id) {
+            <tr class="hover:bg-blue-50/40 transition-colors duration-150">
+              <td class="px-6 py-4">
+                <div class="flex items-center gap-3">
+                  <div class="flex h-9 w-9 items-center justify-center rounded-lg text-[13px] font-bold text-white" style="background:linear-gradient(135deg, #2563eb, #3b82f6);">
+                    {{ agent.name[0].toUpperCase() }}
+                  </div>
+                  <span class="text-[13px] font-bold text-foreground">{{ agent.name }}</span>
+                </div>
+              </td>
+              <td class="px-6 py-4 text-muted-foreground font-medium text-[12px]">{{ agent.email }}</td>
+              <td class="px-6 py-4">
+                <span class="inline-flex items-center px-3 py-1.5 rounded-lg text-[11px] font-bold bg-purple-100/70 text-purple-700 border border-purple-200/50">{{ agent.department }}</span>
+              </td>
+              <td class="px-6 py-4">
+                <span class="inline-flex items-center px-3 py-1 rounded-lg text-[11px] font-bold" [class]="agent.role === 'admin' ? 'bg-red-100/70 text-red-700 border border-red-200/50' : 'bg-blue-100/70 text-blue-700 border border-blue-200/50'">
+                  {{ agent.role === 'admin' ? '👑 Admin' : '🎯 Agent' }}
+                </span>
+              </td>
+              <td class="px-6 py-4">
+                <button (click)="handleToggleStatus(agent)" [disabled]="agent.id === 'admin-1'" class="focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed">
+                  <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-[11px] font-bold transition-colors"
+                    [class]="agent.status === 'active'
+                      ? 'bg-emerald-100/70 text-emerald-700 border border-emerald-200/50'
+                      : 'bg-slate-100/70 text-slate-700 border border-slate-200/50'">
+                    <span class="h-2.5 w-2.5 rounded-full" [class]="agent.status === 'active' ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'"></span>
+                    {{ agent.status === 'active' ? 'Active' : 'Disabled' }}
+                  </span>
+                </button>
+              </td>
+              <td class="px-6 py-4">
+                <span class="text-[13px] font-bold text-foreground bg-blue-100/50 px-3 py-1.5 rounded-lg inline-block">{{ agent.activeChats }}</span>
+              </td>
+              <td class="px-6 py-4">
+                <div class="flex items-center gap-1.5">
+                  <button (click)="handleResetPassword(agent)" class="rounded-lg p-2 hover:bg-amber-500/10 text-muted-foreground hover:text-amber-600 transition-all" title="Reset password">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                  </button>
+                  <button (click)="openEdit(agent)" class="rounded-lg p-2 hover:bg-blue-500/10 text-muted-foreground hover:text-blue-600 transition-all" title="Edit agent">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                  </button>
+                  <button (click)="handleDelete(agent)" [disabled]="agent.id === 'admin-1'" class="rounded-lg p-2 hover:bg-rose-500/10 text-muted-foreground hover:text-rose-600 disabled:opacity-30 transition-all" title="Delete">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          }
+          @if (paginatedAgents.length === 0) {
+            <tr><td colspan="7" class="px-6 py-16 text-center">
+              <div class="flex flex-col items-center justify-center gap-3">
+                <svg class="h-12 w-12 text-muted-foreground/30" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path d="M12 4.354a4 4 0 110 5.292M19 13H5"/></svg>
+                <p class="text-[13px] font-bold text-foreground">No agents found</p>
+                <p class="text-[11px] text-muted-foreground">Adjust your filters or register a new team member</p>
+              </div>
+            </td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    @if (totalPages > 1) {
+      <div class="flex items-center justify-between px-6 py-4 border-t border-border/60 bg-muted/20">
+        <span class="text-[12px] font-bold text-muted-foreground">{{ filteredAgents.length }} agents total</span>
+        <div class="flex gap-2">
+          @for (p of pageNumbers(); track p) {
+            <button (click)="currentPage.set(p)" class="h-8 w-8 rounded-lg text-[12px] font-bold transition-all"
+              [class]="currentPage() === p ? 'bg-blue-600 text-white shadow-lg' : 'text-muted-foreground hover:bg-muted border border-border/60'">{{ p }}</button>
+          }
+        </div>
+      </div>
+    }
+  </div>
+</div>
+
+<!-- Modal -->
+<app-modal [isOpen]="modalOpen()" [title]="editingAgent() ? '✏️ Edit Agent' : '➕ Register New Agent'" (onClose)="modalOpen.set(false)">
+  <form (ngSubmit)="handleSave()" class="space-y-5">
+    @if (formError()) {
+      <div class="p-4 rounded-lg bg-rose-50/80 border border-rose-200/60 text-rose-700 text-[12px] flex items-start gap-3 animate-fade-in">
+        <svg class="h-4 w-4 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M12 8v4m0 4v.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        <span class="font-medium">{{ formError() }}</span>
+      </div>
+    }
+
+    <div>
+      <label class="block text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-2">Full Name *</label>
+      <input type="text" [(ngModel)]="formName" name="formName" required placeholder="e.g. Sarah Johnson" class="w-full px-4 py-3 bg-muted/30 border border-border/60 rounded-lg text-[13px] font-medium focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-200/50 text-foreground placeholder-muted-foreground"/>
+    </div>
+
+    <div>
+      <label class="block text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-2">Email Address *</label>
+      <input type="email" [(ngModel)]="formEmail" name="formEmail" required placeholder="agent@autovyn.com" class="w-full px-4 py-3 bg-muted/30 border border-border/60 rounded-lg text-[13px] font-medium focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-200/50 text-foreground placeholder-muted-foreground"/>
+    </div>
+
+    @if (!editingAgent()) {
+      <div>
+        <label class="block text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-2">Initial Password *</label>
+        <input type="password" [(ngModel)]="formPassword" name="formPassword" required placeholder="••••••••" class="w-full px-4 py-3 bg-muted/30 border border-border/60 rounded-lg text-[13px] font-medium focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-200/50 text-foreground placeholder-muted-foreground"/>
+      </div>
+    }
+
+    <div>
+      <label class="block text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-2">Department *</label>
+      <select [(ngModel)]="formDept" name="formDept" class="w-full px-4 py-3 bg-muted/30 border border-border/60 rounded-lg text-[13px] font-medium focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-200/50 text-foreground cursor-pointer">
+        @for (d of departments(); track d.id) { <option [value]="d.name">{{ d.name }}</option> }
+        @if (departments().length === 0) { <option value="Support">Support</option> }
+      </select>
+    </div>
+
+    <div>
+      <label class="block text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-3">Role *</label>
+      <div class="flex gap-4">
+        <label class="flex items-center gap-2.5 text-[13px] font-medium text-foreground cursor-pointer">
+          <input type="radio" name="formRole" [checked]="formRole === 'agent'" (change)="formRole = 'agent'" class="accent-blue-600 h-4 w-4"/>
+          Support Agent
+        </label>
+        <label class="flex items-center gap-2.5 text-[13px] font-medium text-foreground cursor-pointer">
+          <input type="radio" name="formRole" [checked]="formRole === 'admin'" (change)="formRole = 'admin'" class="accent-blue-600 h-4 w-4"/>
+          Administrator
+        </label>
+      </div>
+    </div>
+
+    @if (editingAgent()) {
+      <div>
+        <label class="block text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-2">Status *</label>
+        <select [(ngModel)]="formStatus" name="formStatus" class="w-full px-4 py-3 bg-muted/30 border border-border/60 rounded-lg text-[13px] font-medium focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-200/50 text-foreground cursor-pointer">
+          <option value="active">🟢 Active (Enabled)</option>
+          <option value="inactive">⚪ Inactive (Disabled)</option>
+        </select>
+      </div>
+    }
+
+    <div class="flex gap-3 justify-end pt-3 border-t border-border/60">
+      <button type="button" (click)="modalOpen.set(false)" class="px-6 py-2.5 border border-border/60 rounded-lg text-[13px] font-bold hover:bg-muted text-muted-foreground transition-all">Cancel</button>
+      <button type="submit" class="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg text-[13px] font-bold hover:shadow-lg transition-all">
+        {{ editingAgent() ? '💾 Save Changes' : '✅ Register Agent' }}
+      </button>
+    </div>
+  </form>
+</app-modal>

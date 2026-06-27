@@ -1,0 +1,132 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Brand palette — #F5F7FA bg, #FFFFFF card, #2563EB primary */
+    --background:        220 20% 97%;
+    --foreground:        222 47% 11%;
+    --card:              0 0% 100%;
+    --card-foreground:   222 47% 11%;
+    --primary:           221 83% 53%;
+    --primary-foreground: 0 0% 100%;
+    --secondary:         220 14% 96%;
+    --secondary-foreground: 222 47% 11%;
+    --muted:             220 14% 96%;
+    --muted-foreground:  220 9% 46%;
+    --accent:            221 83% 96%;
+    --accent-foreground: 221 83% 40%;
+    --destructive:       0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --border:            220 13% 91%;
+    --input:             220 13% 91%;
+    --ring:              221 83% 53%;
+    --radius:            0.75rem;
+
+    /* Sidebar tokens (always dark regardless of theme) */
+    --sidebar-bg:        222 47% 8%;
+    --sidebar-surface:   222 47% 12%;
+    --sidebar-text:      220 14% 70%;
+    --sidebar-text-active: 0 0% 100%;
+    --sidebar-border:    222 47% 16%;
+    --sidebar-accent:    221 83% 53%;
+  }
+
+  .dark {
+    --background:        222 47% 6%;
+    --foreground:        220 20% 97%;
+    --card:              222 47% 9%;
+    --card-foreground:   220 20% 97%;
+    --primary:           221 83% 60%;
+    --primary-foreground: 0 0% 100%;
+    --secondary:         222 47% 13%;
+    --secondary-foreground: 220 20% 97%;
+    --muted:             222 47% 13%;
+    --muted-foreground:  220 9% 55%;
+    --accent:            222 47% 14%;
+    --accent-foreground: 221 83% 70%;
+    --destructive:       0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --border:            222 47% 16%;
+    --input:             222 47% 16%;
+    --ring:              221 83% 60%;
+  }
+}
+
+@layer base {
+  * { @apply border-border; }
+  html { font-size: 16px; scroll-behavior: smooth; }
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+    font-size: 1rem;
+    line-height: 1.6;
+    letter-spacing: 0.01em;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* ─── Scrollbar ─── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: hsl(var(--border)); border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: hsl(var(--muted-foreground) / 0.4); }
+
+/* ─── Animations ─── */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(24px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
+}
+
+.animate-fade-in      { animation: fadeIn 220ms ease both; }
+.animate-slide-up     { animation: slideUp 260ms cubic-bezier(.22,.68,0,1.2) both; }
+.animate-slide-right  { animation: slideInRight 240ms ease both; }
+.animate-scale-in     { animation: scaleIn 200ms ease both; }
+
+/* ─── Skeleton loader ─── */
+.skeleton {
+  background: linear-gradient(90deg,
+    hsl(var(--muted)) 25%,
+    hsl(var(--border)) 50%,
+    hsl(var(--muted)) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 6px;
+}
+
+/* ─── Premium scrollbar-thin util ─── */
+.scrollbar-thin::-webkit-scrollbar { width: 4px; }
+.scrollbar-thin::-webkit-scrollbar-thumb { background: hsl(var(--border)); border-radius: 99px; }
+
+/* ─── Sidebar active glow ─── */
+.nav-active-glow {
+  box-shadow: inset 3px 0 0 hsl(var(--sidebar-accent));
+}
